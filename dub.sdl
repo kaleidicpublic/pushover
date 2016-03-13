@@ -1,0 +1,5 @@
+name "pushover"
+description "Dlang API for pushover.net notification API"
+copyright "Copyright © 2016, Laeeth Isharc and Kaleidic Associates Advisory Limited"
+authors "Laeeth Isharc"
+license "Boost"

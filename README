@@ -1,0 +1,30 @@
+Pushover Dlang API
+
+Alpha bindings for https://pushover.net/api notification API
+
+"Pushover uses a simple, versioned REST API to receive messages from your application and send them to devices running our device clients. To simplify the user registration process and usage of our API, there are no complicated out-of-band authentication mechanisms or per-call signing libraries required, such as OAuth. HTTP libraries available in just about every language, or even from the command line, can be used without any custom modules or extra dependencies needed. See our FAQ for examples in different programming languages."
+
+
+Boost-licensed.  Use at your peril.
+
+Example code:
+
+
+import kaleidic.api.pushover;
+import std.datetime;
+import std.stdio;
+void main(string[] args)
+{
+    auto api=PushoverAPI("application token,"user key");
+    PushoverMessage message;
+    message=message.setMessage("message text")
+        .setTitle("message title")
+        .setUrl("google.com")
+        .setUrlTitle("google")
+        .setPriority(PushoverMessagePriority.high)
+        .setTimeStamp(DateTime(2013,1,1));
+    auto ret=api.sendMessage(message);
+    writefln("%s",ret["status"]);
+    writefln("%s",ret["request"]);
+}
+

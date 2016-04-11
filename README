@@ -10,21 +10,29 @@ Boost-licensed.  Use at your peril.
 Example code:
 
 
-import kaleidic.api.pushover;
-import std.datetime;
-import std.stdio;
-void main(string[] args)
+unittest
 {
-    auto api=PushoverAPI("application token,"user key");
+    import std.datetime:Clock;
+
+    enum applicationKey = "set me".ApplicationToken;
+    enum targetUserKey = "set me".UserKey;
+    enum groupKey = "set me".GroupKey;
+    enum targetUserMemo ="memo field here";
+    
+    auto api=PushoverAPI(applicationToken);
+    writefln("validate target user: %s",api.validate(targetUserKey));
+    writeln("result of adding target user to group:",api.addUserToGroup(targetUserKey,groupKey,null.DeviceName,targetUserMemo));
     PushoverMessage message;
-    message=message.setMessage("message text")
-        .setTitle("message title")
-        .setUrl("google.com")
-        .setUrlTitle("google")
+
+    message=message.setMessage("as the CNBC anchor said, is buying GS here like D&G on sale?")
+        .setTitle("Kaleidic Market Alert - GS")
+        .setUrl("kaleidic.io")
+        .setUrlTitle("GS chart")
         .setPriority(PushoverMessagePriority.high)
-        .setTimeStamp(DateTime(2013,1,1));
-    auto ret=api.sendMessage(message);
-    writefln("%s",ret["status"]);
-    writefln("%s",ret["request"]);
+        .setTimeStamp(Clock.currTime());
+    writefln("%s",message);
+    auto ret=api.sendMessage(message,targetUserKey);
+    writefln("message status: %s",ret["status"]);
+    writefln("message request: %s",ret["request"]);
 }
 

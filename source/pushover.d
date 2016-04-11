@@ -314,6 +314,12 @@ string stripQuotes(string s)
     return s;
 }
 
+string fixUrl(string s) // sorry - not sure why urls are being escaped - kludge for now
+{
+    import std.string:replace;
+    return s.replace("\\/","/");
+}
+
 auto request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.get, JSONValue params=JSONValue(null))
 {
     import std.array:appender;
@@ -331,7 +337,7 @@ auto request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.get, JS
     }
     else if (!params.object.keys.canFind("user"))
     {
-        params["user"]=api.userKey;
+        params["user"]=api.userKey.key;
     }
 
 
@@ -343,7 +349,7 @@ auto request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.get, JS
                 paramsData.put("&");
             paramsData.put(param.to!string.encodeComponent);
             paramsData.put("=");
-            paramsData.put(params[param].toString.stripQuotes.encodeComponent);
+            paramsData.put(param.to!string=="url"?params[param].toString.stripQuotes.fixUrl:params[param].toString.stripQuotes.encodeComponent);
         }
     }
     debug
@@ -364,6 +370,7 @@ auto request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.get, JS
     debug writeln(cast(string)response.data);
     return parseJSON(cast(string)response.data);
 }
+
 
     
 unittest

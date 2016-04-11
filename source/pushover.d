@@ -19,6 +19,7 @@ import std.datetime:SysTime,DateTime;
     API for pushover notification API
     https://pushover.net/
 */
+debug=1;
 
 static this()
 {
@@ -54,25 +55,46 @@ string joinUrl(string url, string endpoint)
         url=url[0..$-1];
     return url~"/"~endpoint;
 }
-/**
-    auto __str__(self):
-        return b"<{:s} at {:#x}>".format(type(self).__name__, id(self))
 
-    auto __unicode__(self):
-        return "<{:s} at {:#x}>".format(type(self).__name__, id(self))
-*/
+struct ApplicationKey
+{
+    string key;
+    alias key this;
+}
+struct UserKey
+{
+    string key;
+    alias key this;
+}
 
+struct GroupKey
+{
+    string key;
+    alias key this;
+}
+
+struct APIToken
+{
+    string token;
+    alias token this;
+}
+
+struct DeviceName
+{
+    string name;
+    alias name this;
+}
 struct PushoverAPI
 {
     string endpoint = "https://api.pushover.net/1/";
-    string token;
-    string userKey=null;
+    APIToken token;
+    UserKey userKey=null.UserKey;
 
-    this(string token)
+    this(APIToken token)
     {
         this.token=token;
     }
-    this(string token, string userKey)
+    this(APIToken token, UserKey userKey)
     {
         this.token=token;
         this.userKey=userKey;
@@ -93,7 +115,7 @@ string[] PushoverMessageSounds;
 struct PushoverMessage
 {
     string messageText=null;
-    string device=null;
+    DeviceName device=null.DeviceName;
     string title=null;
     string url=null;
     string urlTitle=null;
@@ -113,9 +135,9 @@ auto ref setMessage(ref PushoverMessage message, string messageText)
     return message;
 }
 
-auto ref setDevice(ref PushoverMessage message, string device)
+auto ref setDevice(ref PushoverMessage message, DeviceName device)
 {
-    message.device=device;
+    message.device=device.name;
     return message;
 }
 
@@ -166,14 +188,20 @@ auto ref setSound(ref PushoverMessage message, string sound)
     return message;
 }
 
-auto sendMessage(PushoverAPI api, PushoverMessage message, string user=null)
+auto sendMessage(PushoverAPI api, PushoverMessage message, UserKey user=null.UserKey)
 {
-    JSONValue params;
-    if (user is null)
-        params["user"]=api.userKey;
-    params["message"]=message.messageText;
-    if (message.device !is null)
-        params["device"]=message.device;
+    JSONValue params = ["message": message.messageText];
+    if (user.key.length==0)
+    {
+        enforce(api.userKey.key.length>0,"PushOverAPI.sendMessage - you must specify either a user in the sendMessage call or in the API constructor");
+        params["user"]=api.userKey.key;
+    }
+    else
+    {
+        params["user"] = user.key;
+    }
+    if (message.device.name !is null)
+        params["device"]=message.device.name;
     if (message.title !is null)
         params["title"] = message.title;
     if (message.url !is null)
@@ -189,71 +217,78 @@ auto sendMessage(PushoverAPI api, PushoverMessage message, string user=null)
     return api.request("messages.json", HTTP.Method.post,params);
 }
 
-auto listGroupMembers(PushoverAPI api, string groupKey)
+auto listGroupMembers(PushoverAPI api, GroupKey groupKey)
 {
     return api.request("groups/"~groupKey~".json",HTTP.Method.get);
 }
 
-auto addUserToGroup(PushoverAPI api, string userKey, string groupKey, string device=null, string memo=null)
+
+auto addUserToGroup(PushoverAPI api, UserKey userKey, GroupKey groupKey, DeviceName device=null.DeviceName, string memo=null)
 {
+    import std.uri:encodeComponent;
     JSONValue params;
-    params["user"] = userKey;
-    if (device !is null)
-        params["device"] = device;
+    params["user"] = userKey.key;
+    if (device.name !is null)
+        params["device"] = device.name;
     if (memo !is null)
         params["memo"] = memo;
-    return api.request("groups/"~groupKey~"/add_user.json",HTTP.Method.post);
+    return api.request("groups/"~groupKey.key.encodeComponent~"/add_user.json",HTTP.Method.post,params);
 }
 
-auto removeUserFromGroup(PushoverAPI api, string userKey, string groupKey)
+auto removeUserFromGroup(PushoverAPI api, UserKey userKey, GroupKey groupKey)
 {
+    import std.uri:encodeComponent;
     JSONValue params;
     params["user"]=userKey;
-    return api.request("groups/"~groupKey~"/delete_user.json",HTTP.Method.post);
+    return api.request("groups/"~groupKey.key.encodeComponent~"/delete_user.json",HTTP.Method.post,params);
 }
 
-auto disableUser(PushoverAPI api, string userKey, string groupKey)
+auto disableUser(PushoverAPI api, UserKey userKey, GroupKey groupKey)
 {
+    import std.uri:encodeComponent;
     JSONValue params;
     params["user"]=userKey;
-    return api.request("groups/"~groupKey~"/disable_user.json",HTTP.Method.post);
+    return api.request("groups/"~groupKey.key.encodeComponent~"/disable_user.json",HTTP.Method.post,params);
 }
 
-auto enableUser(PushoverAPI api, string userKey, string groupKey)
+auto enableUser(PushoverAPI api, UserKey userKey, GroupKey groupKey)
 {
-    JSONValue params;
-    params["user"]=userKey;
-    return api.request("groups/"~groupKey~"/enable_user.json",HTTP.Method.post);
+    import std.uri:encodeComponent;
+    JSONValue params =[ "user": userKey.key ];
+    return api.request("groups/"~groupKey.key.encodeComponent~"/enable_user.json",HTTP.Method.post,params);
 }
 
 auto renameGroup(PushoverAPI api, string oldName, string newName)
 {
+    import std.uri:encodeComponent;
     JSONValue params;
     params["name"]=newName;
-    return api.request("groups/"~oldName~"/rename.json",HTTP.Method.post);
+    return api.request("groups/"~oldName.encodeComponent~"/rename.json",HTTP.Method.post,params);
 }
 auto listSounds(PushoverAPI api)
 {
     return api.request("sounds.json",HTTP.Method.get);
 }
 
-auto validate(PushoverAPI api, string user, string device=null)
+auto validate(PushoverAPI api, UserKey user, DeviceName device=null.DeviceName)
 {
     JSONValue params;
-    params["user"]=user;
+    params["user"]=user.key;
     if(device.length>0)
-        params["device"]=device;
+        params["device"]=device.name;
     return api.request("users/validate.json",HTTP.Method.post,params);
 }
 
 auto checkReceipt(PushoverAPI api, string receipt)
 {
-    return api.request("receipts/"~receipt~".json");
+    import std.uri:encodeComponent;
+    return api.request("receipts/"~receipt.encodeComponent~".json");
 }
 
 auto cancelEmergencyDelivery(PushoverAPI api, string receipt)
 {
-    return api.request("receipts/"~receipt~"/cancel.json");
+    import std.uri:encodeComponent;
+    return api.request("receipts/"~receipt.encodeComponent~"/cancel.json");
 }
 
 auto assignLicense(PushoverAPI api, string email=null, string os=null)
@@ -279,7 +314,7 @@ string stripQuotes(string s)
     return s;
 }
 
-JSONValue request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.get, JSONValue params=JSONValue(null))
+auto request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.get, JSONValue params=JSONValue(null))
 {
     import std.array:appender;
     import std.uri:encodeComponent;
@@ -290,25 +325,30 @@ JSONValue request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.ge
     paramsData.put("token=");
     paramsData.put(api.token.encodeComponent);
     paramsData.put("&");
-    if (!params.object.keys.canFind("user"))
+    if (params.type != JSON_TYPE.OBJECT) 
     {
-        paramsData.put("user=");
-        paramsData.put(api.userKey.encodeComponent);
-        paramsData.put("&");
+        params=["user": api.userKey.key];
     }
-    foreach(i,param;params.object.keys)
+    else if (!params.object.keys.canFind("user"))
     {
-        if (i>0)
-            paramsData.put("&");
-        paramsData.put(param.to!string.encodeComponent);
-        paramsData.put("=");
-        paramsData.put(params[param].toString.stripQuotes.encodeComponent);
+        params["user"]=api.userKey;
     }
 
-    version(debug)
+
+    if (params.type == JSON_TYPE.OBJECT)
     {
-        writefln("%s",params.toString);
-        writefln("%s",paramsData.data.to!string);
+        foreach(i,param;params.object.keys)
+        {
+            if (i>0)
+                paramsData.put("&");
+            paramsData.put(param.to!string.encodeComponent);
+            paramsData.put("=");
+            paramsData.put(params[param].toString.stripQuotes.encodeComponent);
+        }
+    }
+    debug
+    {
+        writefln("request: %s",paramsData.data);
     }
     url=api.endpoint.joinUrl(url);
     auto client=HTTP(url);
@@ -321,22 +361,34 @@ JSONValue request(PushoverAPI api, string url, HTTP.Method method=HTTP.Method.ge
         return data.length;
     };
     client.perform();                 // rely on curl to throw exceptions on 204, >=500
+    debug writeln(cast(string)response.data);
     return parseJSON(cast(string)response.data);
 }
 
-/++
-void main(string[] args)
+    
+unittest
 {
-    auto api=PushoverAPI("application token,"user key");
+    import std.datetime:Clock;
+
+    enum applicationKey = "set me".ApplicationToken;
+    enum targetUserKey = "set me".UserKey;
+    enum groupKey = "set me".GroupKey;
+    enum targetUserMemo ="memo field here";
+    
+    auto api=PushoverAPI(applicationToken);
+    writefln("validate target user: %s",api.validate(targetUserKey));
+    writeln("result of adding target user to group:",api.addUserToGroup(targetUserKey,groupKey,null.DeviceName,targetUserMemo));
     PushoverMessage message;
-    message=message.setMessage("message text")
-        .setTitle("message title")
-        .setUrl("google.com")
-        .setUrlTitle("google")
+
+    message=message.setMessage("as the CNBC anchor said, is buying GS here like D&G on sale?")
+        .setTitle("Kaleidic Market Alert - GS")
+        .setUrl("kaleidic.io")
+        .setUrlTitle("GS chart")
         .setPriority(PushoverMessagePriority.high)
-        .setTimeStamp(DateTime(2013,1,1));
-    auto ret=api.sendMessage(message);
-    writefln("%s",ret["status"]);
-    writefln("%s",ret["request"]);
+        .setTimeStamp(Clock.currTime());
+    writefln("%s",message);
+    auto ret=api.sendMessage(message,targetUserKey);
+    writefln("message status: %s",ret["status"]);
+    writefln("message request: %s",ret["request"]);
 }
-+/
+

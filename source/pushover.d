@@ -1,10 +1,17 @@
 /**
-    Implemented in the D Programming Language 2016 by Laeeth Isharc and Kaleidic Associates Advisory UK Limited
-    Boost Licensed
-    Use at your own risk - this is not tested at all.
+    Pushover Dlang API by Laeeth Isharc and Kaleidic Associates Advisory Limited
+    2016, 2017
 
-    API for pushover notification API
-    https://pushover.net/
+    Beta bindings for https://pushover.net/api notification API
+
+    Generated documentation http://pushover.code.kaleidic.io
+
+    "Pushover uses a simple, versioned REST API to receive messages from your application and send them to devices running device clients.
+    To simplify the user registration process and usage of our API, there are no complicated out-of-band authentication mechanisms or
+    per-call signing libraries required, such as OAuth. HTTP libraries available in just about every language, or even from the command line,
+    can be used without any custom modules or extra dependencies needed. See our FAQ for examples in different programming languages."
+
+    Boost-licensed.  Use at your peril.
 */
 /**
     Example:

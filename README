@@ -9,7 +9,7 @@ Boost-licensed.  Use at your peril.
 
 Example code:
 
-
+```
 unittest
 {
     import std.datetime:Clock;
@@ -36,3 +36,4 @@ unittest
     writefln("message request: %s",ret["request"]);
 }
 
+```
